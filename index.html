@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <title>QR-Code Generator (Offline / Ohne API)</title>
+    <!-- Einbindung der qrcode.js Bibliothek -->
+    <script src="scripts/qrcode.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 400px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        button.generate:hover {
+            background-color: rgba(83, 165, 83, 0.926);
+        }
+
+        button.download {
+            background-color: rgba(207, 207, 59, 0.798);
+        }
+
+        button.download:hover {
+            background-color: rgba(172, 172, 44, 0.926);
+        }
+
+        button.generate {
+            background-color: rgba(94, 187, 94, 0.798);
+        }
+
+        #qrcode {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Container für Positionierung */
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        /* Das eigentliche Eingabefeld */
+        .input-group input {
+            width: 100%;
+            padding: 16px 14px;
+            font-size: 16px;
+            color: #1f1f1f;
+            background-color: transparent;
+            border: 1px solid #747775;
+            border-radius: 8px;
+            /* Typische MD3-Rundung */
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Hover-Zustand */
+        .input-group input:hover {
+            border-color: #1f1f1f;
+        }
+
+        /* Fokus-Zustand (Material Primary Farbe) */
+        .input-group input:focus {
+            border-color: #0b57d0;
+            box-shadow: 0 0 0 1px #0b57d0;
+            /* Simuliert einen 2px Rahmen ohne Layout-Sprung */
+        }
+
+        /* Das Label im Ruhezustand (liegt im Feld) */
+        .input-group label {
+            position: absolute;
+            left: 12px;
+            top: 41%;
+            transform: translateY(-50%);
+            background-color: #ffffff;
+            /* Muss der Hintergrundfarbe der Seite entsprechen */
+            padding: 0 4px;
+            color: #444746;
+            font-size: 16px;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .input-group input:focus~label,
+        .input-group input:not(:placeholder-shown)~label {
+            top: 0;
+            font-size: 12px;
+            font-weight: 500;
+            color: #0b57d0;
+        }
+
+        .input-group input:not(:focus):not(:placeholder-shown)~label {
+            color: #444746;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>QR-Code Generator</h2>
+    <!-- HTML: Wrapper für Input + schwebendes Label -->
+    <div class="input-group">
+        <input type="text" id="text-input" placeholder=" " required>
+        <label for="text-input">Text oder URL eingeben</label>
+    </div>
+    <button class="generate" onclick="generateQR()">Generieren</button>
+    <button class="download" onclick="downloadQR()">Als PNG herunterladen</button>
+    <div id="error"></div>
+
+    <div id="qrcode"></div>
+
+    <script>
+        const error = document.getElementById("error");
+        const qrContainer = document.getElementById("qrcode");
+        let qrcode = null; // Erst mal leer lassen
+
+        function generateQR() {
+            const inputField = document.getElementById("text-input");
+            const text = inputField.value.trim();
+
+            if (!text) {
+                error.innerHTML = `<h5 style="color: red">Bitte gib einen Text oder eine URL ein.</h5>`;
+                return;
+            }
+
+            error.innerHTML = '';
+
+            // Wenn noch kein QR-Code existiert, neu erstellen; sonst aktualisieren
+            if (!qrcode) {
+                qrcode = new QRCode(qrContainer, {
+                    text: text,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                qrcode.makeCode(text);
+            }
+
+            // Eingabefeld leeren (falls gewünscht)
+            inputField.value = "";
+        }
+
+        function downloadQR() {
+            // Prüfen, ob überhaupt schon ein Code generiert wurde
+            if (!qrcode) {
+                error.innerHTML = `<h5 style="color: red">Bitte erstelle zuerst einen QR-Code.</h5>`;
+                return;
+            }
+
+            const canvas = qrContainer.querySelector("canvas");
+            const img = qrContainer.querySelector("img");
+            let imageUrl = "";
+
+            if (canvas) {
+                imageUrl = canvas.toDataURL("image/png");
+            } else if (img && img.src) {
+                imageUrl = img.src;
+            }
+
+            // Sauberer Zeitstempel ohne Doppelpunkte für Windows/Mac
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+
+            const downloadLink = document.createElement("a");
+            downloadLink.href = imageUrl;
+            downloadLink.download = `qrcode-${timestamp}.png`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+
+</body>
+
+</html>
